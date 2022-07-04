@@ -144,7 +144,7 @@ SSSPGPUTreeBenchmark::SSSPGPUTreeBenchmark(
     , cu_neighbors(nullptr)
 {
     // Initialize update counter.
-    CUDA_ERRCHK(cudaMallocManagedManaged((void **) &cu_updated, sizeof(nid_t)));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updated, sizeof(nid_t)));
 
     CUDA_ERRCHK(cudaMallocManaged((void **) &cu_dist, 
             g->num_nodes * sizeof(weight_t)));
