@@ -144,9 +144,9 @@ SSSPGPUTreeBenchmark::SSSPGPUTreeBenchmark(
     , cu_neighbors(nullptr)
 {
     // Initialize update counter.
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_updated, sizeof(nid_t)));
+    CUDA_ERRCHK(cudaMallocManagedManaged((void **) &cu_updated, sizeof(nid_t)));
 
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_dist, 
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_dist, 
             g->num_nodes * sizeof(weight_t)));
 }
 
@@ -166,9 +166,9 @@ PRGPUTreeBenchmark::PRGPUTreeBenchmark(
     , cu_neighbors(nullptr)
 {
     // Initialize update counter.
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_updated, sizeof(nid_t)));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updated, sizeof(nid_t)));
 
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_dist, 
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_dist, 
 			    g->num_nodes * sizeof(weight_t)));
 }
 
@@ -303,7 +303,7 @@ segment_res_t PRGPUTreeBenchmark::benchmark_segment(
         degrees[i]=g->get_degree(i);
     }
     size_t deg_size = g->num_nodes * sizeof(offset_t);
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_degrees, deg_size));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_degrees, deg_size));
     CUDA_ERRCHK(cudaMemcpy(cu_degrees, degrees, deg_size,
 		cudaMemcpyHostToDevice));
 
@@ -404,11 +404,11 @@ segment_res_t PRGPUTreeBenchmark::benchmark_segment(
 
     /*// Initialize parents array.*/
     /*nid_t *cu_parents = nullptr;*/
-    /*CUDA_ERRCHK(cudaMalloc((void **) &cu_parents, g->num_nodes * sizeof(nid_t)));*/
+    /*CUDA_ERRCHK(cudaMallocManaged((void **) &cu_parents, g->num_nodes * sizeof(nid_t)));*/
 
     /*// Initialize num nodes.*/
     /*nid_t *cu_num_nodes = nullptr;*/
-    /*CUDA_ERRCHK(cudaMalloc((void **) &cu_num_nodes, sizeof(nid_t)));*/
+    /*CUDA_ERRCHK(cudaMallocManaged((void **) &cu_num_nodes, sizeof(nid_t)));*/
 
     /*// Time kerenl (avg of BENCHMARK_FULL_TIME_ITERS).*/
     /*double total_time = 0.0;*/

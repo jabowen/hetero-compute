@@ -472,7 +472,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         degrees[i]=g.get_degree(i);
     }}
     size_t deg_size = g.num_nodes * sizeof(offset_t);
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_degrees, deg_size));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_degrees, deg_size));
     CUDA_ERRCHK(cudaMemcpy(cu_degrees, degrees, deg_size,
             cudaMemcpyHostToDevice));
 
@@ -512,7 +512,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     weight_t *cu_scores[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {{        
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMalloc((void **) &cu_scores[gpu], score_size));
+        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores[gpu], score_size));
         CUDA_ERRCHK(cudaMemcpyAsync(cu_scores[gpu], score, score_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
     }}
@@ -526,7 +526,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     nid_t *cu_updateds[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {{
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMalloc((void **) &cu_updateds[gpu], 
+        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updateds[gpu], 
                 sizeof(nid_t)));
     }}
 

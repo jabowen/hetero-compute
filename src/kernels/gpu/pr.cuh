@@ -53,8 +53,8 @@ double pr_pull_gpu(
     wnode_t  *cu_neighbors  = nullptr;
     size_t   index_size     = (g.num_nodes + 1) * sizeof(offset_t);
     size_t   neighbors_size = g.num_edges * sizeof(wnode_t);
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_index, index_size));
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_neighbors, neighbors_size));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_index, index_size));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_neighbors, neighbors_size));
     CUDA_ERRCHK(cudaMemcpy(cu_index, g.index, index_size, 
             cudaMemcpyHostToDevice));
     CUDA_ERRCHK(cudaMemcpy(cu_neighbors, g.neighbors, neighbors_size, 
@@ -67,21 +67,21 @@ double pr_pull_gpu(
         degrees[i]=g.get_degree(i);
     }
     size_t deg_size = g.num_nodes * sizeof(offset_t);
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_degrees, deg_size));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_degrees, deg_size));
     CUDA_ERRCHK(cudaMemcpy(cu_degrees, degrees, deg_size,
 	    cudaMemcpyHostToDevice));
 
     // Score
     weight_t *cu_score = nullptr;
     size_t score_size = g.num_nodes * sizeof(weight_t);
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_score, score_size));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_score, score_size));
     CUDA_ERRCHK(cudaMemcpy(cu_score, init_score, score_size, 
             cudaMemcpyHostToDevice));
 
     // Update counter.
     nid_t updated     = 1;
     nid_t *cu_updated = nullptr;
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_updated, sizeof(nid_t)));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updated, sizeof(nid_t)));
 
     // Start kernel!
     Timer timer; timer.Start();
