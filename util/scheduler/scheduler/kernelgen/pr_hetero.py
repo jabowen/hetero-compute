@@ -610,7 +610,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         }}
 
         // Only update GPU scores if another epoch will be run.
-        if (updated != 0) {{
+        /*if (updated != 0) {{
             // Copy CPU scores to all GPUs.
             {indent_after(generate_score_HtoD_synchronize(), 12)}
 
@@ -620,7 +620,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
 
             // Synchronize HtoD async calls.
             {indent_after(generate_score_HtoD_synchronize_sync(), 12)}
-        }}
+        }}*/
 
         {indent_after(generate_interleave_DtoH_synchronize(), 8)}
 
