@@ -13,6 +13,10 @@ benchmark_sssp.exe: benchmark_sssp.cu
 test: benchmark_sssp.exe
 	./benchmark_sssp.exe ../../graphs/graph_scale23_degree16.wsg 
 
+.PHONY: move
+move:
+	mv *.yaml ../../util/scheduler
+
 .PHONY: clean
 clean:
 	-rm benchmark_sssp.exe
