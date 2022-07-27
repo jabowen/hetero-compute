@@ -501,7 +501,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
     weight_t *cu_dists[num_gpus];
     for (int gpu = 0; gpu < num_gpus; gpu++) {{        
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMalloc((void **) &cu_dists[gpu], dist_size));
+        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_dists[gpu], dist_size));
         CUDA_ERRCHK(cudaMemcpyAsync(cu_dists[gpu], dist, dist_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus]));
     }}
@@ -515,7 +515,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
     nid_t *cu_updateds[num_gpus];
     for (int gpu = 0; gpu < num_gpus; gpu++) {{
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMalloc((void **) &cu_updateds[gpu], 
+        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updateds[gpu], 
                 sizeof(nid_t)));
     }}
 
@@ -613,6 +613,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
         {indent_after(generate_interleave_synchronize(), 8)}
         epochs++;
     }}
+    */
     {indent_after(generate_distance_DtoH_synchronize())}
     timer.Stop();
 
