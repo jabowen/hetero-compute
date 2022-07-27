@@ -613,7 +613,6 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
         {indent_after(generate_interleave_synchronize(), 8)}
         epochs++;
     }}
-    */
     {indent_after(generate_distance_DtoH_synchronize())}
     timer.Stop();
 
