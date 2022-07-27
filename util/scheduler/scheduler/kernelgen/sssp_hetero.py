@@ -594,6 +594,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
         }}
 
         // Only update GPU distances if another epoch will be run.
+        /*
         if (updated != 0) {{
             // Copy CPU distances to all GPUs.
             {indent_after(generate_distance_HtoD_synchronize(), 12)}
@@ -605,6 +606,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
             // Synchronize HtoD async calls.
             {indent_after(generate_distance_HtoD_synchronize_sync(), 12)}
         }}
+        */
 
         {indent_after(generate_interleave_DtoH_synchronize(), 8)}
 

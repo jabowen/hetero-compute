@@ -6,7 +6,7 @@
 #define SRC_BENCHMARKS__HETEROGENEOUS_BENCHMARK_CUH
 
 #include "../graph.cuh"
-#include "../kernels/heterogeneous/bfs.cuh"
+//#include "../kernels/heterogeneous/bfs.cuh"
 #include "../kernels/heterogeneous/sssp.cuh"
 #include "../kernels/heterogeneous/pr.cuh"
 

@@ -11,12 +11,12 @@ bfs:
 
 .PHONY: sssp
 sssp:
-	python3 sched.py --algorithm sssp $(SSSP_PROFILE_DIR)/*.yaml
+	python3.7 sched.py --algorithm sssp ../../profile/sssp/*.yaml
 	mv sssp.cuh ../../src/kernels/heterogeneous/
 
 .PHONY: pr
 pr:
-	        python3 sched.py --algorithm pr *.yaml
+	        python3.7 sched.py --algorithm pr ../../profile/pr/*.yaml
 		        mv pr.cuh ../../src/kernels/heterogeneous/
 
 .PHONY: error
