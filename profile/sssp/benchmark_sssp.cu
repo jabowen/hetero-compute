@@ -32,7 +32,7 @@
 
 #ifdef ONLY_LAYER
 // Number of segments (NOT depth).
-#define SEGMENTS 24
+#define SEGMENTS 16
 #else
 // Current/Up to (inclusive) this depth.
 #define DEPTH 6

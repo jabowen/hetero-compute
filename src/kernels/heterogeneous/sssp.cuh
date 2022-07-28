@@ -40,18 +40,20 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
         const weight_t *init_dist, weight_t ** const ret_dist
 ) {
     // Configuration.
-    constexpr int num_blocks   = 1;
-    constexpr int num_segments = 24;
+    constexpr int num_blocks   = 2;
+    constexpr int num_segments = 16;
     
     // Copy graph.
     nid_t *seg_ranges = compute_equal_edge_ranges(g, num_segments);
     
     /// Block ranges to reduce irregular memory acceses.
-    constexpr int gpu_blocks[] = {0, 1};
+    constexpr int gpu_blocks[] = {0, 2};
     nid_t block_ranges[num_blocks * 2];
 
     block_ranges[0] = seg_ranges[0]; // Block 0 Start 0
-    block_ranges[1] = seg_ranges[6]; // Block 0 End 6 (excl.)
+    block_ranges[1] = seg_ranges[3]; // Block 0 End 3 (excl.)
+    block_ranges[2] = seg_ranges[4]; // Block 1 Start 4
+    block_ranges[3] = seg_ranges[6]; // Block 1 End 6 (excl.)
 
     /// Actual graphs on GPU memory.
     offset_t *cu_indices[num_blocks];
@@ -157,7 +159,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
         // Launch GPU epoch kernels.
         // Implicit CUDA device synchronize at the start of kernels.
         CUDA_ERRCHK(cudaSetDevice(0));
-        epoch_sssp_pull_gpu_block_red<<<512, 512, 0, compute_streams[0]>>>(
+        epoch_sssp_pull_gpu_block_red<<<256, 1024, 0, compute_streams[0]>>>(
                 cu_indices[0], cu_neighbors[0],
                 block_ranges[0], block_ranges[1],
                 cu_dists[0], cu_updateds[0]);
@@ -166,12 +168,27 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
                 dist + block_ranges[0], cu_dists[0] + block_ranges[0],
                 (block_ranges[1] - block_ranges[0]) * sizeof(weight_t),
                 cudaMemcpyDeviceToHost, compute_streams[0]));
+        epoch_sssp_pull_gpu_block_red<<<2048, 128, 0, compute_streams[1]>>>(
+                cu_indices[1], cu_neighbors[1],
+                block_ranges[2], block_ranges[3],
+                cu_dists[0], cu_updateds[0]);
+        CUDA_ERRCHK(cudaEventRecord(compute_markers[1], compute_streams[1]));
+        CUDA_ERRCHK(cudaMemcpyAsync(
+                dist + block_ranges[2], cu_dists[0] + block_ranges[2],
+                (block_ranges[3] - block_ranges[2]) * sizeof(weight_t),
+                cudaMemcpyDeviceToHost, compute_streams[1]));
 
         // Launch CPU epoch kernels.
         #pragma omp parallel
         {
             epoch_sssp_pull_cpu_one_to_one(g, dist, 
-                    seg_ranges[6], seg_ranges[24],
+                    seg_ranges[3], seg_ranges[4],
+                    omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
+        }
+#pragma omp parallel
+        {
+            epoch_sssp_pull_cpu_one_to_one(g, dist, 
+                    seg_ranges[6], seg_ranges[16],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
         }
 
@@ -201,15 +218,22 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
             // Copy CPU distances to all GPUs.
             for (int gpu = 0; gpu < num_gpus; gpu++) {
                 CUDA_ERRCHK(cudaMemcpyAsync(
+                    cu_dists[gpu] + seg_ranges[3],
+                    dist + seg_ranges[3],
+                    (seg_ranges[4] - seg_ranges[3]) * sizeof(weight_t),
+                    cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus + gpu]));
+            }
+            for (int gpu = 0; gpu < num_gpus; gpu++) {
+                CUDA_ERRCHK(cudaMemcpyAsync(
                     cu_dists[gpu] + seg_ranges[6],
                     dist + seg_ranges[6],
-                    (seg_ranges[24] - seg_ranges[6]) * sizeof(weight_t),
+                    (seg_ranges[16] - seg_ranges[6]) * sizeof(weight_t),
                     cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus + gpu]));
             }
 
             // Copy GPU distances peer-to-peer.
             // Not implmented if INTERLEAVE=true.
-            gpu_butterfly_P2P(seg_ranges, cu_dists, memcpy_streams); 
+            gpu_butterfly_P2P(seg_ranges, cu_dists, memcpy_streams);
 
             // Synchronize HtoD async calls.
             for (int gpu = 0; gpu < num_gpus; gpu++)

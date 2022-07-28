@@ -601,7 +601,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
 
             // Copy GPU distances peer-to-peer.
             // Not implmented if INTERLEAVE=true.
-            gpu_butterfly_P2P(seg_ranges, cu_dists, memcpy_streams); 
+            gpu_butterfly_P2P(seg_ranges, cu_dists, memcpy_streams);
 
             // Synchronize HtoD async calls.
             {indent_after(generate_distance_HtoD_synchronize_sync(), 12)}
