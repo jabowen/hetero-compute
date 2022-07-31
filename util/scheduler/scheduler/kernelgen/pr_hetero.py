@@ -665,6 +665,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
             CUDA_ERRCHK(cudaFree(cu_neighbors[block]));
         }}
     }}
+    //CUDA_ERRCHK(cudaFreeHost(score));
     delete[] seg_ranges;
 
     return timer.Millisecs();

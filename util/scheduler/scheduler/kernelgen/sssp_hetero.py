@@ -180,10 +180,12 @@ CUDA_ERRCHK(cudaEventRecord(compute_markers[{idx}], compute_streams[{idx}]));
                 if has_cpu:
                     segcode += '\n' + \
 f"""
+/*
 CUDA_ERRCHK(cudaMemcpyAsync(
         dist + block_ranges[{2 * idx}], cu_dists[{devid}] + block_ranges[{2 * idx}],
         (block_ranges[{2 * idx + 1}] - block_ranges[{2 * idx}]) * sizeof(weight_t),
         cudaMemcpyDeviceToHost, compute_streams[{idx}]));
+*/
 """.strip()
 
                 # Peer to Peer memcpy if needed.
@@ -226,7 +228,7 @@ for (int gpu = 0; gpu < num_gpus; gpu++) {{
 f""" 
 #pragma omp parallel
 {{
-    {to_epochkernel_funcname(kernel.kerid)}(g, dist, 
+    {to_epochkernel_funcname(kernel.kerid)}(g, cu_dists[0], 
             seg_ranges[{kerseg.seg_start}], seg_ranges[{kerseg.seg_end + 1}],
             omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
 }}
@@ -489,20 +491,21 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
 
     // Distance.
     size_t   dist_size = g.num_nodes * sizeof(weight_t);
-    weight_t *dist     = nullptr; 
+    /*weight_t *dist     = nullptr; 
 
     /// CPU Distance.
     CUDA_ERRCHK(cudaMallocHost((void **) &dist, dist_size));
     #pragma omp parallel for
     for (int i = 0; i < g.num_nodes; i++)
         dist[i] = init_dist[i];
+    */
 
     /// GPU Distances.
     weight_t *cu_dists[num_gpus];
     for (int gpu = 0; gpu < num_gpus; gpu++) {{        
         CUDA_ERRCHK(cudaSetDevice(gpu));
         CUDA_ERRCHK(cudaMallocManaged((void **) &cu_dists[gpu], dist_size));
-        CUDA_ERRCHK(cudaMemcpyAsync(cu_dists[gpu], dist, dist_size,
+        CUDA_ERRCHK(cudaMemcpyAsync(cu_dists[gpu], init_dist, dist_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus]));
     }}
     for (int gpu = 0; gpu < num_gpus; gpu++) {{
@@ -515,7 +518,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
     nid_t *cu_updateds[num_gpus];
     for (int gpu = 0; gpu < num_gpus; gpu++) {{
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updateds[gpu], 
+        CUDA_ERRCHK(cudaMalloc((void **) &cu_updateds[gpu], 
                 sizeof(nid_t)));
     }}
 
@@ -620,7 +623,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
     *ret_dist = new weight_t[g.num_nodes];
     #pragma omp parallel for
     for (int i = 0; i < g.num_nodes; i++)
-        (*ret_dist)[i] = dist[i];
+        (*ret_dist)[i] = cu_dists[0][i];
 
     // Free streams.
     for (int gpu = 0; gpu < num_gpus; gpu++) {{
@@ -647,7 +650,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
             CUDA_ERRCHK(cudaFree(cu_neighbors[block]));
         }}
     }}
-    CUDA_ERRCHK(cudaFreeHost(dist));
+    //CUDA_ERRCHK(cudaFreeHost(dist));
     delete[] seg_ranges;
 
     return timer.Millisecs();
