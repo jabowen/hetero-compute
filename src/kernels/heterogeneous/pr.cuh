@@ -59,14 +59,12 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
 
     //degrees
     offset_t *cu_degrees      = nullptr;
-    offset_t *degrees = new offset_t[g.num_nodes];
-    for(int i=0; i<g.num_nodes; i++){
-        degrees[i]=g.get_degree(i);
-    }
+
     size_t deg_size = g.num_nodes * sizeof(offset_t);
     CUDA_ERRCHK(cudaMallocManaged((void **) &cu_degrees, deg_size));
-    CUDA_ERRCHK(cudaMemcpy(cu_degrees, degrees, deg_size,
-            cudaMemcpyHostToDevice));
+    for(int i=0; i<g.num_nodes; i++){
+        cu_degrees[i]=g.get_degree(i);
+    }
 
     /// Actual graphs on GPU memory.
     offset_t *cu_indices[num_blocks];
