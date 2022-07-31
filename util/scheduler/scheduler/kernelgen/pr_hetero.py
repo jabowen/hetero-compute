@@ -180,10 +180,12 @@ CUDA_ERRCHK(cudaEventRecord(compute_markers[{idx}], compute_streams[{idx}]));
                 if has_cpu:
                     segcode += '\n' + \
 f"""
+/*
 CUDA_ERRCHK(cudaMemcpyAsync(
         score + block_ranges[{2 * idx}], cu_scores[{devid}] + block_ranges[{2 * idx}],
         (block_ranges[{2 * idx + 1}] - block_ranges[{2 * idx}]) * sizeof(weight_t),
         cudaMemcpyDeviceToHost, compute_streams[{idx}]));
+*/
 """.strip()
 
                 # Peer to Peer memcpy if needed.
