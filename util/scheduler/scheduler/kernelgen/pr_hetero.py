@@ -228,7 +228,7 @@ for (int gpu = 0; gpu < num_gpus_pr; gpu++) {{
 f""" 
 #pragma omp parallel
 {{
-     cudaDeviceSynchronize();
+    cudaDeviceSynchronize();
     {to_epochkernel_funcname(kernel.kerid)}(g, cu_scores[0], 
             seg_ranges[{kerseg.seg_start}], seg_ranges[{kerseg.seg_end + 1}],
             omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
