@@ -508,7 +508,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     CUDA_ERRCHK(cudaMallocHost((void **) &score, score_size));
     #pragma omp parallel for
     for (int i = 0; i < g.num_nodes; i++)
-        score[i] = init_score[i];
+        score[i] = init_score[i]; 
     */
      
     /// GPU scores.
