@@ -214,7 +214,8 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         // Launch CPU epoch kernels.
         #pragma omp parallel
         {
-            epoch_pr_pull_cpu_one_to_one(g, score, 
+             cudaDeviceSynchronize();
+            epoch_pr_pull_cpu_one_to_one(g, cu_scores[0], 
                     seg_ranges[5], seg_ranges[15],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
         }
@@ -274,7 +275,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     *ret_score = new weight_t[g.num_nodes];
     #pragma omp parallel for
     for (int i = 0; i < g.num_nodes; i++)
-        (*ret_score)[i] = score[i];
+        (*ret_score)[i] = cu_scores[0][i];
 
     // Free streams.
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
