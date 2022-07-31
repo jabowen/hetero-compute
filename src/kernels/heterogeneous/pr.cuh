@@ -40,22 +40,18 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         const weight_t *init_score, weight_t ** const ret_score
 ) {
     // Configuration.
-    constexpr int num_blocks   = 3;
+    constexpr int num_blocks   = 1;
     constexpr int num_segments = 16;
     
     // Copy graph.
     nid_t *seg_ranges = compute_equal_edge_ranges(g, num_segments);
     
     /// Block ranges to reduce irregular memory acceses.
-    constexpr int gpu_blocks[] = {0, 3};
+    constexpr int gpu_blocks[] = {0, 1};
     nid_t block_ranges[num_blocks * 2];
 
-    block_ranges[0] = seg_ranges[0]; // Block 0 Start 0
-    block_ranges[1] = seg_ranges[3]; // Block 0 End 3 (excl.)
-    block_ranges[2] = seg_ranges[3]; // Block 1 Start 3
-    block_ranges[3] = seg_ranges[5]; // Block 1 End 5 (excl.)
-    block_ranges[4] = seg_ranges[15]; // Block 2 Start 15
-    block_ranges[5] = seg_ranges[16]; // Block 2 End 16 (excl.)
+    block_ranges[0] = seg_ranges[1]; // Block 0 Start 1
+    block_ranges[1] = seg_ranges[7]; // Block 0 End 7 (excl.)
 
     //degrees
     offset_t *cu_degrees      = nullptr;
@@ -64,7 +60,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         degrees[i]=g.get_degree(i);
     }
     size_t deg_size = g.num_nodes * sizeof(offset_t);
-    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_degrees, deg_size));
+    CUDA_ERRCHK(cudaMalloc((void **) &cu_degrees, deg_size));
     CUDA_ERRCHK(cudaMemcpy(cu_degrees, degrees, deg_size,
             cudaMemcpyHostToDevice));
 
@@ -92,20 +88,21 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
 
     // score.
     size_t   score_size = g.num_nodes * sizeof(weight_t);
-    weight_t *score     = nullptr; 
+    /*weight_t *score     = nullptr; 
 
     /// CPU score.
     CUDA_ERRCHK(cudaMallocHost((void **) &score, score_size));
     #pragma omp parallel for
     for (int i = 0; i < g.num_nodes; i++)
         score[i] = init_score[i];
-
+    */
+     
     /// GPU scores.
     weight_t *cu_scores[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {        
         CUDA_ERRCHK(cudaSetDevice(gpu));
         CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores[gpu], score_size));
-        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores[gpu], score, score_size,
+        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores[gpu], init_score, score_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
     }
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
@@ -118,7 +115,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     nid_t *cu_updateds[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updateds[gpu], 
+        CUDA_ERRCHK(cudaMalloc((void **) &cu_updateds[gpu], 
                 sizeof(nid_t)));
     }
 
@@ -177,7 +174,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         // Launch GPU epoch kernels.
         // Implicit CUDA device synchronize at the start of kernels.
         CUDA_ERRCHK(cudaSetDevice(0));
-        epoch_pr_pull_gpu_block_red<<<256, 1024, 0, compute_streams[0]>>>(
+        epoch_pr_pull_gpu_block_red<<<2048, 128, 0, compute_streams[0]>>>(
                 cu_indices[0], cu_neighbors[0],
                 block_ranges[0], block_ranges[1],
                 cu_scores[0], cu_updateds[0], g.num_nodes, cu_degrees);
@@ -188,35 +185,20 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
                 (block_ranges[1] - block_ranges[0]) * sizeof(weight_t),
                 cudaMemcpyDeviceToHost, compute_streams[0]));
         */
-        epoch_pr_pull_gpu_block_red<<<1024, 256, 0, compute_streams[1]>>>(
-                cu_indices[1], cu_neighbors[1],
-                block_ranges[2], block_ranges[3],
-                cu_scores[0], cu_updateds[0], g.num_nodes, cu_degrees);
-        CUDA_ERRCHK(cudaEventRecord(compute_markers[1], compute_streams[1]));
-        /*
-        CUDA_ERRCHK(cudaMemcpyAsync(
-                score + block_ranges[2], cu_scores[0] + block_ranges[2],
-                (block_ranges[3] - block_ranges[2]) * sizeof(weight_t),
-                cudaMemcpyDeviceToHost, compute_streams[1]));
-        */
-        epoch_pr_pull_gpu_one_to_one<<<256, 1024, 0, compute_streams[2]>>>(
-                cu_indices[2], cu_neighbors[2],
-                block_ranges[4], block_ranges[5],
-                cu_scores[0], cu_updateds[0], g.num_nodes, cu_degrees);
-        CUDA_ERRCHK(cudaEventRecord(compute_markers[2], compute_streams[2]));
-        /*
-        CUDA_ERRCHK(cudaMemcpyAsync(
-                score + block_ranges[4], cu_scores[0] + block_ranges[4],
-                (block_ranges[5] - block_ranges[4]) * sizeof(weight_t),
-                cudaMemcpyDeviceToHost, compute_streams[2]));
-        */
 
         // Launch CPU epoch kernels.
         #pragma omp parallel
         {
              cudaDeviceSynchronize();
             epoch_pr_pull_cpu_one_to_one(g, cu_scores[0], 
-                    seg_ranges[5], seg_ranges[15],
+                    seg_ranges[0], seg_ranges[1],
+                    omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
+        }
+#pragma omp parallel
+        {
+             cudaDeviceSynchronize();
+            epoch_pr_pull_cpu_one_to_one(g, cu_scores[0], 
+                    seg_ranges[7], seg_ranges[16],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
         }
 
@@ -245,9 +227,16 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
             // Copy CPU scores to all GPUs.
             for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
                 CUDA_ERRCHK(cudaMemcpyAsync(
-                    cu_scores[gpu] + seg_ranges[5],
-                    score + seg_ranges[5],
-                    (seg_ranges[15] - seg_ranges[5]) * sizeof(weight_t),
+                    cu_scores[gpu] + seg_ranges[0],
+                    score + seg_ranges[0],
+                    (seg_ranges[1] - seg_ranges[0]) * sizeof(weight_t),
+                    cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr + gpu]));
+            }
+            for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
+                CUDA_ERRCHK(cudaMemcpyAsync(
+                    cu_scores[gpu] + seg_ranges[7],
+                    score + seg_ranges[7],
+                    (seg_ranges[16] - seg_ranges[7]) * sizeof(weight_t),
                     cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr + gpu]));
             }
 
@@ -302,7 +291,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
             CUDA_ERRCHK(cudaFree(cu_neighbors[block]));
         }
     }
-    CUDA_ERRCHK(cudaFreeHost(score));
+    //CUDA_ERRCHK(cudaFreeHost(score));
     delete[] seg_ranges;
 
     return timer.Millisecs();
