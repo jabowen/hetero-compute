@@ -469,11 +469,10 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     {indent_after(generate_block_ranges())}
 
     //degrees
-    //degrees
     offset_t *cu_degrees      = nullptr;
 
     size_t deg_size = g.num_nodes * sizeof(offset_t);
-    CUDA_ERRCHK(cudaMalloc((void **) &cu_degrees, deg_size));
+    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_degrees, deg_size));
     for(int i=0; i<g.num_nodes; i++){{
         cu_degrees[i]=g.get_degree(i);
     }}
