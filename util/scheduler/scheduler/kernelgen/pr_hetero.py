@@ -475,7 +475,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         degrees[i]=g.get_degree(i);
     }}
     size_t deg_size = g.num_nodes * sizeof(offset_t);
-    CUDA_ERRCHK(cudaMallocManaged((void **) &cu_degrees, deg_size));
+    CUDA_ERRCHK(cudaMalloc((void **) &cu_degrees, deg_size));
     CUDA_ERRCHK(cudaMemcpy(cu_degrees, degrees, deg_size,
             cudaMemcpyHostToDevice));
 
@@ -503,20 +503,21 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
 
     // score.
     size_t   score_size = g.num_nodes * sizeof(weight_t);
-    weight_t *score     = nullptr; 
+    /*weight_t *score     = nullptr; 
 
     /// CPU score.
     CUDA_ERRCHK(cudaMallocHost((void **) &score, score_size));
     #pragma omp parallel for
     for (int i = 0; i < g.num_nodes; i++)
         score[i] = init_score[i];
-
+    */
+     
     /// GPU scores.
     weight_t *cu_scores[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {{        
         CUDA_ERRCHK(cudaSetDevice(gpu));
         CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores[gpu], score_size));
-        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores[gpu], score, score_size,
+        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores[gpu], init_score, score_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
     }}
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {{
@@ -529,7 +530,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     nid_t *cu_updateds[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {{
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updateds[gpu], 
+        CUDA_ERRCHK(cudaMalloc((void **) &cu_updateds[gpu], 
                 sizeof(nid_t)));
     }}
 
