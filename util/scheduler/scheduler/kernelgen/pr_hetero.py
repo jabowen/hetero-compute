@@ -652,11 +652,11 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     }}
 
     // Free memory.
+    CUDA_ERRCHK(cudaFree(cu_degrees));
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {{
         CUDA_ERRCHK(cudaSetDevice(gpu));
         CUDA_ERRCHK(cudaFree(cu_updateds[gpu]));
         CUDA_ERRCHK(cudaFree(cu_scores[gpu]));
-        CUDA_ERRCHK(cudaFree(cu_degrees[gpu]));
         
         for (int block = gpu_blocks[gpu]; block < gpu_blocks[gpu + 1];
                 block++
@@ -665,7 +665,6 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
             CUDA_ERRCHK(cudaFree(cu_neighbors[block]));
         }}
     }}
-    CUDA_ERRCHK(cudaFreeHost(score));
     delete[] seg_ranges;
 
     return timer.Millisecs();
