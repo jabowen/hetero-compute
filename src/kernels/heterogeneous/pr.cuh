@@ -231,10 +231,10 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
                     cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr + gpu]));
             }*/
 			
-			weight_t *cu_temp[num_gpus_pr];
-			temp=cu_scores[1];
-			cu_scores[1]=cu_scores[2];
-			cu_scores[2]=temp;
+			weight_t *temp[num_gpus_pr];
+			temp=cu_scores1;
+			cu_scores1=cu_scores2;
+			cu_scores2=temp;
 			free(temp);
 
             // Copy GPU scores peer-to-peer.
