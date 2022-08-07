@@ -232,14 +232,14 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
             }*/
 			
 			weight_t *temp[num_gpus_pr];
-			temp=cu_scores1;
-			cu_scores1=cu_scores2;
-			cu_scores2=temp;
+			temp=&cu_scores1;
+			cu_scores1=&cu_scores2;
+			cu_scores2=&temp;
 			free(temp);
 
             // Copy GPU scores peer-to-peer.
             // Not implmented if INTERLEAVE=true.
-            gpu_butterfly_P2P_pr(seg_ranges, cu_scores, memcpy_streams); 
+            gpu_butterfly_P2P_pr(seg_ranges, cu_scores1, memcpy_streams); 
 
             // Synchronize HtoD async calls.
             for (int gpu = 0; gpu < num_gpus_pr; gpu++)
