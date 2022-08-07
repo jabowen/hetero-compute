@@ -1,5 +1,5 @@
 /**
- * CPU implementations of SSSP pull kernels.
+ * CPU implementations of PR pull kernels.
  */
 
 #ifndef SRC_KERNELS_CPU__KERNEL_PR_CUH
@@ -17,7 +17,7 @@
 #include "../../util.h"
 
 /*****************************************************************************
- ***** SSSP Kernels **********************************************************
+ ***** PR Kernels **********************************************************
  *****************************************************************************/
 
 /**
@@ -44,9 +44,11 @@ double pr_pull_cpu(
     nid_t updated = 1;
 
     // Start kernel!
+	int i=0;
     Timer timer; timer.Start();
     while (updated != 0) {
         updated = 0;
+		i++;
 
         #pragma omp parallel
         {
@@ -58,6 +60,8 @@ double pr_pull_cpu(
     }
     timer.Stop();
 
+printf("iters=%d",i);
+
     // Assign output.
     *ret_score = score;
 
@@ -65,7 +69,7 @@ double pr_pull_cpu(
 }
 
 /**
- * Run SSSP kernel on CPU in serial.
+ * Run PR kernel on CPU in serial. (Not implementated)
  * Parameters:
  *   - g         <- graph.
  *   - source_id <- initial point. 
@@ -143,7 +147,7 @@ const float kDamp = 0.85;
  *****************************************************************************/
 
 /**
- * Runs SSSP pull on CPU for one epoch.
+ * Runs PR pull on CPU for one epoch.
  * Parameters:
  *   - g           <- graph.
  *   - score        <- input scores and output scores computed this 
