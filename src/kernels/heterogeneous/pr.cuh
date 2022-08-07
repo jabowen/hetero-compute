@@ -96,20 +96,22 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     */
      
     /// GPU scores.
-    weight_t *cu_scores1[num_gpus_pr];
+    weight_t *cu_scores1t[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {        
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores1[gpu], score_size));
-        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores1[gpu], init_score, score_size,
+        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores1t[gpu], score_size));
+        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores1t[gpu], init_score, score_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
     }
-	weight_t *cu_scores2[num_gpus_pr];
+    weight_t **cu_scores1=cu_scores1t;
+	weight_t *cu_scores2t[num_gpus_pr];
 	for (int gpu = 0; gpu < num_gpus_pr; gpu++) {        
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores2[gpu], score_size));
-        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores2[gpu], init_score, score_size,
+        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores2t[gpu], score_size));
+        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores2t[gpu], init_score, score_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
     }
+    weight_t **cu_scores2=cu_scores2t;
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
         CUDA_ERRCHK(cudaStreamSynchronize(memcpy_streams[gpu * num_gpus_pr]));
     }
@@ -194,7 +196,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         // Launch CPU epoch kernels.
         #pragma omp parallel
         {
-            cudaDeviceSynchronize();
+            //cudaDeviceSynchronize();
             epoch_pr_pull_cpu_one_to_one(g, cu_scores2[0], 
                     seg_ranges[4], seg_ranges[8],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
@@ -231,7 +233,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
                     cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr + gpu]));
             }*/
 			
-			weight_t *temp[num_gpus_pr];
+			weight_t **temp;
 			temp=cu_scores1;
 			cu_scores1=cu_scores2;
 			cu_scores2=temp;
