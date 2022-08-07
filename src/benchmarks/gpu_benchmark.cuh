@@ -630,10 +630,10 @@ segment_res_t benchmark_pr_gpu(
     nid_t previous_source = 0;
     double total_time = 0.0;
     for (int iter = 0; iter < BENCHMARK_FULL_TIME_ITERS; iter++) {
-	nid_t cur_source = sp.next_vertex();
+	/*nid_t cur_source = sp.next_vertex();
 	init_score[previous_source] = INF_WEIGHT;
 	init_score[cur_source]      = 0;
-	previous_source = cur_source;
+	previous_source = cur_source;*/
 
 	total_time += pr_pull_gpu(g, epoch_kernel, init_score, &ret_score,
 		block_size, thread_count);
