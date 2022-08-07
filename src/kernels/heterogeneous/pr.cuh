@@ -232,10 +232,9 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
             }*/
 			
 			weight_t *temp[num_gpus_pr];
-			temp=&cu_scores1;
-			cu_scores1=&cu_scores2;
-			cu_scores2=&temp;
-			free(temp);
+			temp=cu_scores1;
+			cu_scores1=cu_scores2;
+			cu_scores2=temp;
 
             // Copy GPU scores peer-to-peer.
             // Not implmented if INTERLEAVE=true.
