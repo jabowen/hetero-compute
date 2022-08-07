@@ -186,12 +186,14 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
         // Launch CPU epoch kernels.
         #pragma omp parallel
         {
+            cudaDeviceSynchronize();
             epoch_sssp_pull_cpu_one_to_one(g, cu_dists[0], 
                     seg_ranges[3], seg_ranges[4],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
         }
 #pragma omp parallel
         {
+            cudaDeviceSynchronize();
             epoch_sssp_pull_cpu_one_to_one(g, cu_dists[0], 
                     seg_ranges[6], seg_ranges[16],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);

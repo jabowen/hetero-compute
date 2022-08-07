@@ -26,13 +26,13 @@
 // Save results to YAML files.
 #define SAVE_RESULTS
 // Run epoch kernels.
-#define RUN_EPOCH_KERNELS
+//#define RUN_EPOCH_KERNELS
 // Run full kernels.
 #define RUN_FULL_KERNELS
 
 #ifdef ONLY_LAYER
 // Number of segments (NOT depth).
-#define SEGMENTS 16
+#define SEGMENTS 8
 #else
 // Current/Up to (inclusive) this depth.
 #define DEPTH 6

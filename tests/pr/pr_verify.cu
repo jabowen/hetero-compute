@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Check PR GPU naive kernel.
-    {
+    /*{
         weight_t *score = nullptr;
         pr_pull_gpu(g, epoch_pr_pull_gpu_one_to_one, init_score, &score);
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
             << "!" << std::endl;
 
         delete[] score;
-    }
+    }*/
 
     // Check PR GPU warp red kernel.
     {
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Check PR heterogeneous kernel.
-    {
+    /*{
         enable_all_peer_access_pr();
         weight_t *score = nullptr;
         pr_pull_heterogeneous(g, init_score, &score);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
             << "!" << std::endl;
 
         delete[] score;
-    }
+    }*/
 
     delete[] oracle_score;
 
