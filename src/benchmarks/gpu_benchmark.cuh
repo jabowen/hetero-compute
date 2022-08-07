@@ -627,7 +627,7 @@ segment_res_t benchmark_pr_gpu(
     weight_t *ret_score = nullptr;
 
     // Run kernel!
-    nid_t previous_source = 0;
+    //nid_t previous_source = 0;
     double total_time = 0.0;
     for (int iter = 0; iter < BENCHMARK_FULL_TIME_ITERS; iter++) {
 	/*nid_t cur_source = sp.next_vertex();
