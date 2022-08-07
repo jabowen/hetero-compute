@@ -96,22 +96,13 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     */
      
     /// GPU scores.
-    weight_t *cu_scores1t[num_gpus_pr];
+    weight_t *cu_scores[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {        
         CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores1t[gpu], score_size));
-        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores1t[gpu], init_score, score_size,
+        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores[gpu], score_size));
+        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores[gpu], init_score, score_size,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
     }
-    weight_t **cu_scores1=cu_scores1t;
-	weight_t *cu_scores2t[num_gpus_pr];
-	for (int gpu = 0; gpu < num_gpus_pr; gpu++) {        
-        CUDA_ERRCHK(cudaSetDevice(gpu));
-        CUDA_ERRCHK(cudaMallocManaged((void **) &cu_scores2t[gpu], score_size));
-        CUDA_ERRCHK(cudaMemcpyAsync(cu_scores2t[gpu], init_score, score_size,
-            cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
-    }
-    weight_t **cu_scores2=cu_scores2t;
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
         CUDA_ERRCHK(cudaStreamSynchronize(memcpy_streams[gpu * num_gpus_pr]));
     }
@@ -184,7 +175,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         epoch_pr_pull_gpu_block_red<<<512, 512, 0, compute_streams[0]>>>(
                 cu_indices[0], cu_neighbors[0],
                 block_ranges[0], block_ranges[1],
-                cu_scores1[0], cu_updateds[0], g.num_nodes, cu_degrees);
+                cu_scores[0], cu_updateds[0], g.num_nodes, cu_degrees);
         CUDA_ERRCHK(cudaEventRecord(compute_markers[0], compute_streams[0]));
         /*
         CUDA_ERRCHK(cudaMemcpyAsync(
@@ -196,8 +187,8 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         // Launch CPU epoch kernels.
         #pragma omp parallel
         {
-            //cudaDeviceSynchronize();
-            epoch_pr_pull_cpu_one_to_one(g, cu_scores2[0], 
+            cudaDeviceSynchronize();
+            epoch_pr_pull_cpu_one_to_one(g, cu_scores[0], 
                     seg_ranges[4], seg_ranges[8],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
         }
@@ -223,30 +214,24 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         }
 
         // Only update GPU scores if another epoch will be run.
-        if (updated != 0) {
+        /*if (updated != 0) {
             // Copy CPU scores to all GPUs.
-            /*for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
+            for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
                 CUDA_ERRCHK(cudaMemcpyAsync(
                     cu_scores[gpu] + seg_ranges[4],
                     score + seg_ranges[4],
                     (seg_ranges[8] - seg_ranges[4]) * sizeof(weight_t),
                     cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr + gpu]));
-            }*/
-			
-			weight_t **temp;
-			temp=cu_scores1;
-			cu_scores1=cu_scores2;
-			cu_scores2=temp;
+            }
 
             // Copy GPU scores peer-to-peer.
             // Not implmented if INTERLEAVE=true.
-            gpu_butterfly_P2P_pr(seg_ranges, cu_scores1, memcpy_streams); 
+            gpu_butterfly_P2P_pr(seg_ranges, cu_scores, memcpy_streams); 
 
             // Synchronize HtoD async calls.
             for (int gpu = 0; gpu < num_gpus_pr; gpu++)
                 CUDA_ERRCHK(cudaStreamSynchronize(memcpy_streams[gpu * num_gpus_pr + gpu]));
-		    
-        }
+        }*/
 
         // Sync DtoH copies.
         for (int b = 0; b < num_blocks; b++)
@@ -263,7 +248,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     *ret_score = new weight_t[g.num_nodes];
     #pragma omp parallel for
     for (int i = 0; i < g.num_nodes; i++)
-        (*ret_score)[i] = cu_scores1[0][i];
+        (*ret_score)[i] = cu_scores[0][i];
 
     // Free streams.
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
@@ -282,8 +267,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
         CUDA_ERRCHK(cudaSetDevice(gpu));
         CUDA_ERRCHK(cudaFree(cu_updateds[gpu]));
-        CUDA_ERRCHK(cudaFree(cu_scores1[gpu]));
-		CUDA_ERRCHK(cudaFree(cu_scores2[gpu]));
+        CUDA_ERRCHK(cudaFree(cu_scores[gpu]));
         
         for (int block = gpu_blocks[gpu]; block < gpu_blocks[gpu + 1];
                 block++
