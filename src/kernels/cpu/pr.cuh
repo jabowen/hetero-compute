@@ -44,11 +44,9 @@ double pr_pull_cpu(
     nid_t updated = 1;
 
     // Start kernel!
-	int i=0;
     Timer timer; timer.Start();
     while (updated != 0) {
         updated = 0;
-		i++;
 
         #pragma omp parallel
         {
@@ -59,8 +57,6 @@ double pr_pull_cpu(
         // parallel region").
     }
     timer.Stop();
-
-printf("cpu iters=%d\n",i);
 
     // Assign output.
     *ret_score = score;
@@ -164,7 +160,7 @@ void epoch_pr_pull_cpu_one_to_one(
         const int tid, const int num_threads, nid_t &updated
 ) {
 
-    float epsilon=0.0000005;
+    float epsilon=0.00000005;
     nid_t local_updated = 0;
     weight_t base_score = (1.0f - kDamp) / g.num_nodes;
 

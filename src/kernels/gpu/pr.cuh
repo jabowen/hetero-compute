@@ -84,11 +84,8 @@ double pr_pull_gpu(
     CUDA_ERRCHK(cudaMallocManaged((void **) &cu_updated, sizeof(nid_t)));
 
     // Start kernel!
-    int i=0;
     Timer timer; timer.Start();
-    int iters=0;
     while (updated != 0) {
-	    i++;
         CUDA_ERRCHK(cudaMemset(cu_updated, 0, sizeof(nid_t)));
 
         (*epoch_kernel)<<<block_count, thread_count>>>(cu_index, 
@@ -97,12 +94,7 @@ double pr_pull_gpu(
 
         CUDA_ERRCHK(cudaMemcpy(&updated, cu_updated, sizeof(nid_t),
                 cudaMemcpyDeviceToHost));
-	iters++;
-	if(iters>200){
-	    break;
-	}
     }
-    printf("gpu iters=%d\n",i);
     timer.Stop();
 
     // Copy scores.
