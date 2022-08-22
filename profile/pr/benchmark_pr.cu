@@ -211,13 +211,13 @@ int main(int argc, char *argv[]) {
     }
 
     /*// Run GPU block red kernel.*/
-    sp.reset();
+    /*sp.reset();
     {
         std::cout << "PR GPU block red:" << std::endl;
         segment_res_t res = benchmark_pr_gpu(g,
                 epoch_pr_pull_gpu_block_red, sp, NUM_BLOCKS, 1024);
         std::cout << res;
-    }
+    }*/
 
     // Run heterogeneous kernel.
     sp.reset();

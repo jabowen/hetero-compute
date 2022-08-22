@@ -96,6 +96,8 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
     */
      
     /// GPU scores.
+    //remove for loops, make single pointer
+    //test removing host to device part
     weight_t *cu_scores1t[num_gpus_pr];
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {        
         CUDA_ERRCHK(cudaSetDevice(gpu));
@@ -113,6 +115,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
             cudaMemcpyHostToDevice, memcpy_streams[gpu * num_gpus_pr]));
     }
     weight_t **cu_scores2=cu_scores2t;
+
     for (int gpu = 0; gpu < num_gpus_pr; gpu++) {
         CUDA_ERRCHK(cudaStreamSynchronize(memcpy_streams[gpu * num_gpus_pr]));
     }
@@ -180,7 +183,9 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         }
 
         // Launch GPU epoch kernels.
-        // Implicit CUDA device synchronize at the start of kernels.
+        // Implicit CUDA device synchronize at the start of kernels
+	printf("before kernel\n");
+        cudaDeviceSynchronize();
         CUDA_ERRCHK(cudaSetDevice(0));
         epoch_pr_pull_gpu_block_red<<<512, 512, 0, compute_streams[0]>>>(
                 cu_indices[0], cu_neighbors[0],
@@ -195,13 +200,15 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
         */
 
         // Launch CPU epoch kernels.
+	//cudaDeviceSynchronize();
         #pragma omp parallel
         {
-            //cudaDeviceSynchronize();
             epoch_pr_pull_cpu_one_to_one(g, cu_scores2[0], 
                     seg_ranges[4], seg_ranges[8],
                     omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
         }
+	cudaDeviceSynchronize();
+	printf("after kernel\n");
 
         // Sync compute streams.
         for (int b = 0; b < num_blocks; b++)
@@ -241,7 +248,7 @@ double pr_pull_heterogeneous(const CSRWGraph &g,
 
             // Copy GPU scores peer-to-peer.
             // Not implmented if INTERLEAVE=true.
-            gpu_butterfly_P2P_pr(seg_ranges, cu_scores1, memcpy_streams); 
+            //gpu_butterfly_P2P_pr(seg_ranges, cu_scores1, memcpy_streams); 
 
             // Synchronize HtoD async calls.
             for (int gpu = 0; gpu < num_gpus_pr; gpu++)
