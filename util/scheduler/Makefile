@@ -16,7 +16,7 @@ sssp:
 
 .PHONY: pr
 pr:
-	        python3 sched.py --algorithm pr *.yaml
+	        python3.7 sched.py --algorithm pr *.yaml
 		        mv pr.cuh ../../src/kernels/heterogeneous/
 
 .PHONY: error
