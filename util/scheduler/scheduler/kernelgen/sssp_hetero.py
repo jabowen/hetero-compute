@@ -228,7 +228,6 @@ for (int gpu = 0; gpu < num_gpus; gpu++) {{
 f""" 
 #pragma omp parallel
 {{
-    cudaDeviceSynchronize();
     {to_epochkernel_funcname(kernel.kerid)}(g, cu_dists[0], 
             seg_ranges[{kerseg.seg_start}], seg_ranges[{kerseg.seg_end + 1}],
             omp_get_thread_num(), omp_get_num_threads(), cpu_updated);
@@ -575,6 +574,7 @@ double sssp_pull_heterogeneous(const CSRWGraph &g,
         {indent_after(generate_gpu_kernel_launches(), 8)}
 
         // Launch CPU epoch kernels.
+         cudaDeviceSynchronize();
         {indent_all(generate_cpu_kernel_launches(), 8)}
 
         // Sync compute streams.
